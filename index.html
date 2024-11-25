@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Matriz de Doble Materialidad ESG</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #0f766e;
+        margin-bottom: 20px;
+      }
+      p.intro {
+        margin-bottom: 20px;
+        font-size: 1rem;
+        color: #333;
+        line-height: 1.5;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        font-size: 1.1rem;
+        color: #333;
+      }
+      select,
+      input[type="range"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #465e4d;
+        border-radius: 10px;
+      }
+      canvas {
+        margin-top: 20px;
+        background: #f9f9f9;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #c1cac2;
+      }
+      th,
+      td {
+        padding: 10px;
+        text-align: center;
+      }
+      th {
+        background-color: #0f766e;
+        color: white;
+      }
+      .legend {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .legend div {
+        display: flex;
+        align-items: center;
+        margin-right: 15px;
+      }
+      .legend div span {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+        border-radius: 3px;
+      }
+      .download-btn {
+        background-color: #0f766e;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+      .download-btn:hover {
+        background-color: #0d5d56;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Matriz de Doble Materialidad ESG</h1>
+      <p class="intro">
+        La <b>Matriz de Doble Materialidad ESG</b> es una herramienta
+        estratégica que permite identificar y priorizar los temas ESG en función
+        de su impacto en la organización y su importancia para los stakeholders.
+        Los datos recopilados mediante el screening ESG sirven como base para
+        construir esta matriz, ayudando a las organizaciones a tomar decisiones
+        informadas para un desarrollo sostenible.
+      </p>
+
+      <div class="form-group">
+        <label for="categoryFilter">Filtrar por Ámbito ESG</label>
+        <select id="categoryFilter" onchange="filterTopics()">
+          <option value="All">Todos</option>
+          <option value="Environmental">Ambiental</option>
+          <option value="Social">Social</option>
+          <option value="Governance">Gobernanza</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="topicSelect">Selecciona un Tema ESG</label>
+        <select id="topicSelect" onchange="selectTopic()">
+          <option value="">Seleccione un tema</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="impactScore">Impacto Socioambiental (%)</label>
+        <input
+          type="range"
+          id="impactScore"
+          min="0"
+          max="100"
+          value="0"
+          oninput="updateImpactScore(this.value)"
+        />
+        <span id="impactScoreDisplay">0%</span>
+      </div>
+
+      <canvas id="matrixChart" width="800" height="400"></canvas>
+
+      <div class="legend">
+        <div>
+          <span style="background-color: rgba(173, 216, 230, 0.4)"></span>
+          Baja Materialidad
+        </div>
+        <div>
+          <span style="background-color: rgba(135, 206, 250, 0.4)"></span>
+          Materialidad Moderada
+        </div>
+        <div>
+          <span style="background-color: rgba(100, 149, 237, 0.4)"></span>
+          Alta Materialidad
+        </div>
+        <div>
+          <span style="background-color: rgba(65, 105, 225, 0.4)"></span>
+          Muy Alta Materialidad
+        </div>
+      </div>
+
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Tema ESG</th>
+            <th>Impacto Socioambiental (%)</th>
+            <th>Impacto Financiero (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamic rows will be added here -->
+        </tbody>
+      </table>
+
+      <button class="download-btn" onclick="downloadChart()">
+        Descargar Gráfico
+      </button>
+      <button class="download-btn" onclick="downloadData()">
+        Exportar Datos
+      </button>
+    </div>
+
+    <script>
+      const esgTopics = [
+        // Environmental Topics
+        { name: "Biodiversidad", category: "Environmental", coefficient: 0.8 },
+        {
+          name: "Gestión del Agua",
+          category: "Environmental",
+          coefficient: 0.7,
+        },
+        { name: "Vertidos", category: "Environmental", coefficient: 0.6 },
+        { name: "Energía", category: "Environmental", coefficient: 0.9 },
+        { name: "Emisiones", category: "Environmental", coefficient: 0.85 },
+        {
+          name: "Urbanización Sostenible",
+          category: "Environmental",
+          coefficient: 0.7,
+        },
+        {
+          name: "Construcción Ecológica y Gestión del Espacio",
+          category: "Environmental",
+          coefficient: 0.6,
+        },
+        {
+          name: "Economía Circular",
+          category: "Environmental",
+          coefficient: 0.8,
+        },
+        {
+          name: "Consumo Responsable",
+          category: "Environmental",
+          coefficient: 0.7,
+        },
+        {
+          name: "Gestión de Residuos",
+          category: "Environmental",
+          coefficient: 0.6,
+        },
+        // Social Topics
+        { name: "Derechos Humanos", category: "Social", coefficient: 0.9 },
+        {
+          name: "Innovación y Sostenibilidad en Desarrollo de Negocios",
+          category: "Social",
+          coefficient: 0.8,
+        },
+        {
+          name: "Índice de Salud y Bienestar Corporativo",
+          category: "Social",
+          coefficient: 0.75,
+        },
+        {
+          name: "Compromiso Corporativo con la Comunidad Local",
+          category: "Social",
+          coefficient: 0.7,
+        },
+        {
+          name: "Inclusión y Diversidad",
+          category: "Social",
+          coefficient: 0.8,
+        },
+        {
+          name: "Privacidad, Seguridad y Protección de Datos",
+          category: "Social",
+          coefficient: 0.9,
+        },
+        {
+          name: "Desarrollo Profesional y Entorno Laboral en Empresas",
+          category: "Social",
+          coefficient: 0.7,
+        },
+        {
+          name: "Inclusión Socioeconómica y Resiliencia Empresarial",
+          category: "Social",
+          coefficient: 0.6,
+        },
+        {
+          name: "Sostenibilidad Alimentaria y Nutricional",
+          category: "Social",
+          coefficient: 0.8,
+        },
+        // Governance Topics
+        {
+          name: "Gobernanza Institucional",
+          category: "Governance",
+          coefficient: 0.9,
+        },
+        {
+          name: "Participación de Stakeholders",
+          category: "Governance",
+          coefficient: 0.75,
+        },
+        {
+          name: "Transparencia e Integridad Corporativa",
+          category: "Governance",
+          coefficient: 0.85,
+        },
+        {
+          name: "Implementación de Estándares ESG",
+          category: "Governance",
+          coefficient: 0.7,
+        },
+        {
+          name: "Matriz de Cumplimiento ESG",
+          category: "Governance",
+          coefficient: 0.8,
+        },
+        {
+          name: "Gestión de Riesgos y Crisis",
+          category: "Governance",
+          coefficient: 0.9,
+        },
+        {
+          name: "Innovación Digital y CiberSeguridad",
+          category: "Governance",
+          coefficient: 0.8,
+        },
+        {
+          name: "Sostenibilidad Financiera",
+          category: "Governance",
+          coefficient: 0.85,
+        },
+      ];
+
+      let selectedTopic = null;
+      let data = [];
+      let chartInstance = null;
+
+      function filterTopics() {
+        const category = document.getElementById("categoryFilter").value;
+        const topicSelect = document.getElementById("topicSelect");
+        topicSelect.innerHTML = '<option value="">Seleccione un tema</option>';
+        esgTopics
+          .filter((topic) => category === "All" || topic.category === category)
+          .forEach((topic) => {
+            const option = document.createElement("option");
+            option.value = topic.name;
+            option.textContent = topic.name;
+            topicSelect.appendChild(option);
+          });
+      }
+
+      function selectTopic() {
+        const topicName = document.getElementById("topicSelect").value;
+        selectedTopic = esgTopics.find((topic) => topic.name === topicName);
+      }
+
+      function updateImpactScore(score) {
+        document.getElementById("impactScoreDisplay").textContent = `${score}%`;
+        if (selectedTopic) {
+          const financialImpact = (score * selectedTopic.coefficient).toFixed(
+            2
+          );
+          const existingDataIndex = data.findIndex(
+            (d) => d.name === selectedTopic.name
+          );
+          if (existingDataIndex > -1) {
+            data[existingDataIndex].socioEnvironmentalImpact = score;
+            data[existingDataIndex].financialImpact = financialImpact;
+          } else {
+            data.push({
+              name: selectedTopic.name,
+              socioEnvironmentalImpact: score,
+              financialImpact,
+            });
+          }
+          updateTable();
+          updateChart();
+        }
+      }
+
+      function updateTable() {
+        const tbody = document
+          .getElementById("resultsTable")
+          .querySelector("tbody");
+        tbody.innerHTML = "";
+        data.forEach((entry) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+          <td>${entry.name}</td>
+          <td>${entry.socioEnvironmentalImpact}%</td>
+          <td>${entry.financialImpact}%</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function updateChart() {
+        const ctx = document.getElementById("matrixChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Impactos ESG",
+                data: data.map((entry) => ({
+                  x: entry.financialImpact,
+                  y: entry.socioEnvironmentalImpact,
+                  label: entry.name,
+                })),
+                backgroundColor: data.map((entry) =>
+                  getCategoryColor(entry.name)
+                ),
+                borderColor: "#000",
+                borderWidth: 1,
+                pointRadius: 8,
+                pointHoverRadius: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const label = context.raw.label || "";
+                    const xValue = context.raw.x;
+                    const yValue = context.raw.y;
+                    return `${label}: Impacto Financiero (${xValue}%), Impacto Socioambiental (${yValue}%)`;
+                  },
+                },
+              },
+              annotation: {
+                annotations: {
+                  quadrantLow: {
+                    type: "box",
+                    xMin: 0,
+                    xMax: 50,
+                    yMin: 0,
+                    yMax: 50,
+                    backgroundColor: "rgba(173, 216, 230, 0.4)", // Azul claro
+                  },
+                  quadrantMediumLow: {
+                    type: "box",
+                    xMin: 50,
+                    xMax: 100,
+                    yMin: 0,
+                    yMax: 50,
+                    backgroundColor: "rgba(135, 206, 250, 0.4)", // Azul moderado
+                  },
+                  quadrantMediumHigh: {
+                    type: "box",
+                    xMin: 0,
+                    xMax: 50,
+                    yMin: 50,
+                    yMax: 100,
+                    backgroundColor: "rgba(100, 149, 237, 0.4)", // Azul profundo
+                  },
+                  quadrantHigh: {
+                    type: "box",
+                    xMin: 50,
+                    xMax: 100,
+                    yMin: 50,
+                    yMax: 100,
+                    backgroundColor: "rgba(65, 105, 225, 0.4)", // Azul oscuro
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Impacto Financiero (%)",
+                },
+                min: 0,
+                max: 100,
+                ticks: {
+                  stepSize: 10,
+                },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Impacto Socioambiental (%)",
+                },
+                min: 0,
+                max: 100,
+                ticks: {
+                  stepSize: 10,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function getCategoryColor(topicName) {
+        const topic = esgTopics.find((t) => t.name === topicName);
+        if (topic.category === "Environmental") return "rgba(34, 139, 34, 0.8)"; // Verde
+        if (topic.category === "Social") return "rgba(255, 165, 0, 0.8)"; // Ocre
+        if (topic.category === "Governance") return "rgba(54, 162, 235, 0.8)"; // Azul
+        return "#000";
+      }
+
+      function downloadChart() {
+        const link = document.createElement("a");
+        link.href = chartInstance.toBase64Image();
+        link.download = "matriz_esg.png";
+        link.click();
+      }
+
+      function downloadData() {
+        const csvContent =
+          "data:text/csv;charset=utf-8," +
+          ["Tema ESG,Impacto Socioambiental (%),Impacto Financiero (%)"]
+            .concat(
+              data.map(
+                (entry) =>
+                  `${entry.name},${entry.socioEnvironmentalImpact},${entry.financialImpact}`
+              )
+            )
+            .join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "datos_esg.csv");
+        link.click();
+      }
+
+      // Inicializa los temas al cargar la página
+      filterTopics();
+    </script>
+  </body>
+</html>
